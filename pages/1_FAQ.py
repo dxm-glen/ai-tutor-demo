@@ -167,7 +167,7 @@ if file:
             | selected_model
         )
         with st.chat_message("ai"):
-            response = chain.invoke(
+            chain.invoke(
                 message
             )  # 여기서 전달되는 message가 RunnablePassthrough로 가는 것
 
