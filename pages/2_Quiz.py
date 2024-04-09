@@ -248,42 +248,28 @@ def split_file(file):
     return docs
 
 
+@st.cache_data(show_spinner="Making quiz...")
+def run_quiz_chain(_docs):
+    chain = {"context": questions_chain} | formatting_chain | output_parser
+    return chain.invoke(_docs)
+
+
+# @st.cache_data(show_spinner="Searching wikipedia...")
+# def wiki_search(term):
+#     retriever = WikipediaRetriever(top_k_results=2, lang="ko")
+#     docs = retriever.get_relevant_documents(term)
+#     return docs
+
+
 with st.sidebar:
     docs = None
-    choice = st.selectbox(
-        "Choose what you want to use.",
-        (
-            "File",
-            "Wikipedia Article",
-        ),
-    )
-    if choice == "File":
-        file = st.file_uploader("Upload a .txt, .pdf", type=["pdf", "txt"])
-        if file:
-            docs = split_file(file)
-
-    else:
-        topic = st.text_input("Name of the article")
-        if topic:
-            retriever = WikipediaRetriever(top_k_results=2, lang="ko")
-            with st.status("Searching wikipedia..."):
-                docs = retriever.get_relevant_documents(topic)
+    file = st.file_uploader("Upload a .txt, .pdf", type=["pdf", "txt"])
+    if file:
+        docs = split_file(file)
 
 
 if not docs:
     st.markdown("업로드한 문서를 기반으로 퀴즈를 제작합니다.")
 else:
-
-    start = st.button("Generate Quiz")
-
-    if start:
-        # questions_response = questions_chain.invoke(docs)
-        # st.write(questions_response.content)
-        # formatting_response = formatting_chain.invoke(
-        #     {"context": questions_response.content}
-        # )
-        # st.write(formatting_response)
-
-        chain = {"context": questions_chain} | formatting_chain | output_parser
-        response = chain.invoke(docs)
-        st.write(response)
+    response = run_quiz_chain(docs)
+    st.write(response)
