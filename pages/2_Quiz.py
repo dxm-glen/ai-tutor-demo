@@ -31,6 +31,23 @@ gpt_chat = ChatOpenAI(
     callbacks=[StreamingStdOutCallbackHandler()],
 )
 
+session = boto3.Session(
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_KEY"),
+)
+
+bedrock_client = session.client("bedrock-runtime", "us-east-1")
+
+bedrock_chat = BedrockChat(
+    client=bedrock_client,
+    model_id="anthropic.claude-3-sonnet-20240229-v1:0",
+    streaming=True,
+    callbacks=[StreamingStdOutCallbackHandler()],
+    model_kwargs={
+        "temperature": 0.1,
+    },
+)
+
 
 def format_docs(docs):
     return "\n\n".join(document.page_content for document in docs)
@@ -248,4 +265,9 @@ else:
     start = st.button("Generate Quiz")
 
     if start:
-        questions_chain.invoke(docs)
+        questions_response = questions_chain.invoke(docs)
+        st.write(questions_response.content)
+        formatting_response = formatting_chain.invoke(
+            {"context": questions_response.content}
+        )
+        st.write(formatting_response)
