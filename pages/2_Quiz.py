@@ -1,3 +1,4 @@
+import json
 import streamlit as st
 import os
 import boto3
@@ -17,6 +18,17 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 from langchain_community.retrievers import WikipediaRetriever
+from langchain.schema import BaseOutputParser
+
+
+class JsonOutputParser(BaseOutputParser):
+    def parse(self, text):
+        # 텍스트 양끝에 정리하고 json으로 변경해서 python 코드에 쓸 수 있도록 변경
+        text = text.replace("```", "").replace("json", "")
+        return json.loads(text)
+
+
+output_parser = JsonOutputParser()
 
 st.set_page_config(
     page_title="Quiz",
@@ -265,9 +277,13 @@ else:
     start = st.button("Generate Quiz")
 
     if start:
-        questions_response = questions_chain.invoke(docs)
-        st.write(questions_response.content)
-        formatting_response = formatting_chain.invoke(
-            {"context": questions_response.content}
-        )
-        st.write(formatting_response)
+        # questions_response = questions_chain.invoke(docs)
+        # st.write(questions_response.content)
+        # formatting_response = formatting_chain.invoke(
+        #     {"context": questions_response.content}
+        # )
+        # st.write(formatting_response)
+
+        chain = {"context": questions_chain} | formatting_chain | output_parser
+        response = chain.invoke(docs)
+        st.write(response)
