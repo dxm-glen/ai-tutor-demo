@@ -2,6 +2,10 @@ import streamlit as st
 import os
 import boto3
 from langchain_community.chat_models import BedrockChat
+from langchain_community.embeddings import BedrockEmbeddings
+from langchain_community.retrievers import AmazonKnowledgeBasesRetriever
+from langchain.chains import RetrievalQA
+
 from langchain_openai import ChatOpenAI
 
 from langchain_community.document_loaders import TextLoader
@@ -91,13 +95,25 @@ def embed_file(file):
     txt_loader = TextLoader(f"./files/{file.name}")  # 리스트로 나옴
     # pdf_loader = PyPDFLoader("./files/FAQ.pdf")  # 리스트로 나옴 메타데이터에 각 페이지
     docs = txt_loader.load_and_split(text_splitter=splitter)
-    embeddings = OpenAIEmbeddings()
+    # embeddings = OpenAIEmbeddings()
+    embeddings = BedrockEmbeddings(
+        credentials_profile_name="glen.lee.nxtcloud", region_name="us-east-1"
+    )
+
+    # 각 문서에 대해 임베딩을 수행하고 결과를 캐시에 저장
     cached_embeddings = CacheBackedEmbeddings.from_bytes_store(
         embeddings,
         cache_dir,
     )
+    print(cached_embeddings)
+
+    # 임베딩된 문서를 기반으로 FAISS 인덱스 생성
     vectorstore = FAISS.from_documents(docs, cached_embeddings)
-    retriever = vectorstore.as_retriever()
+    # retriever = vectorstore.as_retriever()
+    retriever = AmazonKnowledgeBasesRetriever(
+        knowledge_base_id="PUIJP4EQUA",
+        retrieval_config={"vectorSearchConfiguration": {"numberOfResults": 4}},
+    )
     return retriever
 
 
